@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  mail-service:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=local

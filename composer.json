@@ -1,0 +1,19 @@
+{
+    "name": "christian/email-php",
+    "description": "Professional PHP Dynamic Email Sender Service",
+    "type": "project",
+    "require": {
+        "phpmailer/phpmailer": "^6.9",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Christian"
+        }
+    ]
+}
