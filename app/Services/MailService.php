@@ -20,8 +20,7 @@ class MailService
         $mail = new PHPMailer(true);
 
         try {
-            // Server settings
-            // Override default config if provided
+            // Configuración de servidor
             $host = $customConfig['SMTP_HOST'] ?? $this->config->get('smtp_host');
             $port = $customConfig['SMTP_PORT'] ?? $this->config->get('smtp_port');
             $user = $customConfig['SMTP_USER'] ?? $this->config->get('smtp_user');
@@ -38,9 +37,9 @@ class MailService
             $mail->Port       = $port;
             $mail->CharSet    = 'UTF-8';
             $mail->Encoding   = 'base64';
-            $mail->Timeout    = 10; // 10 seconds timeout for fast failure
+            $mail->Timeout    = 10; 
 
-            // Forzar IPv4 para evitar timeouts en servidores Linux/Render
+            // Forzar IPv4 para evitar timeouts en Render/Linux
             $mail->SMTPOptions = [
                 'ssl' => [
                     'verify_peer' => false,
@@ -48,11 +47,11 @@ class MailService
                     'allow_self_signed' => true
                 ],
                 'socket' => [
-                    'bindto' => '0:0' // Forzar IPv4 (o usar la interfaz por defecto)
+                    'bindto' => '0:0'
                 ]
             ];
 
-            // Recipients - IMPORTANTE: Zoho requiere que el From sea el mismo que el Username
+            // IMPORTANTE PARA ZOHO: El From debe ser el usuario autenticado
             $mail->setFrom($user, $fromName);
             
             if (is_array($to)) {
@@ -63,7 +62,7 @@ class MailService
                 $mail->addAddress($to);
             }
 
-            // Attachments
+            // Adjuntos y CIDs
             foreach ($attachments as $attachment) {
                 if (isset($attachment['content'])) {
                     $mail->addStringAttachment(
@@ -79,7 +78,6 @@ class MailService
                 }
             }
 
-            // Content
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body    = $htmlBody;
