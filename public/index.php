@@ -11,7 +11,9 @@ header('Content-Type: application/json');
 // Simple Router
 $uri = $_SERVER['REQUEST_URI'];
 
-if (strpos($uri, '/config') !== false) {
+if (strpos($uri, '/health') !== false) {
+    echo json_encode(['status' => 'ok', 'service' => 'email-php', 'time' => date('Y-m-d H:i:s')]);
+} elseif (strpos($uri, '/config') !== false) {
     $controller = new ConfigController();
     $controller->save();
 } else {

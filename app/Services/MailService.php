@@ -39,6 +39,8 @@ class MailService
             $mail->Password   = $pass;
             $mail->SMTPSecure = $secure;
             $mail->Port       = $port;
+            $mail->CharSet    = 'UTF-8';
+            $mail->Encoding   = 'base64'; // More robust for HTML with special characters
 
             // Recipients
             $mail->setFrom($from_email, $from_name);
