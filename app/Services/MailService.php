@@ -21,18 +21,15 @@ class MailService
 
         try {
             // Server settings
-            $mail->SMTPDebug = 0; // Disable debug output for production
-            $mail->isSMTP();
-
             // Override default config if provided
-            $host       = $customConfig['host'] ?? $this->config->get('smtp_host');
-            $port       = $customConfig['port'] ?? $this->config->get('smtp_port');
-            $user       = $customConfig['user'] ?? $this->config->get('smtp_user');
-            $pass       = $customConfig['pass'] ?? $this->config->get('smtp_pass');
-            $secure     = $customConfig['secure'] ?? $this->config->get('smtp_secure');
-            $from_email = $customConfig['from_email'] ?? $this->config->get('smtp_from_email');
-            $from_name  = $customConfig['from_name'] ?? $this->config->get('smtp_from_name');
+            $host = $customConfig['SMTP_HOST'] ?? $this->config->get('smtp_host');
+            $port = $customConfig['SMTP_PORT'] ?? $this->config->get('smtp_port');
+            $user = $customConfig['SMTP_USER'] ?? $this->config->get('smtp_user');
+            $pass = $customConfig['SMTP_PASS'] ?? $this->config->get('smtp_pass');
+            $secure = $customConfig['SMTP_SECURE'] ?? $this->config->get('smtp_secure');
+            $fromName = $customConfig['SMTP_FROM_NAME'] ?? $this->config->get('smtp_from_name');
 
+            $mail->isSMTP();
             $mail->Host       = $host;
             $mail->SMTPAuth   = true;
             $mail->Username   = $user;
@@ -40,27 +37,44 @@ class MailService
             $mail->SMTPSecure = $secure;
             $mail->Port       = $port;
             $mail->CharSet    = 'UTF-8';
-            $mail->Encoding   = 'base64'; // More robust for HTML with special characters
+            $mail->Encoding   = 'base64';
+            $mail->Timeout    = 10; // 10 seconds timeout for fast failure
 
-            // Recipients
-            $mail->setFrom($from_email, $from_name);
+            // Forzar IPv4 para evitar timeouts en servidores Linux/Render
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ],
+                'socket' => [
+                    'bindto' => '0:0' // Forzar IPv4 (o usar la interfaz por defecto)
+                ]
+            ];
+
+            // Recipients - IMPORTANTE: Zoho requiere que el From sea el mismo que el Username
+            $mail->setFrom($user, $fromName);
+            
             if (is_array($to)) {
-                foreach ($to as $recipient) {
-                    $mail->addAddress($recipient);
+                foreach ($to as $address) {
+                    $mail->addAddress($address);
                 }
             } else {
                 $mail->addAddress($to);
             }
 
             // Attachments
-            if (!empty($attachments)) {
-                foreach ($attachments as $attachment) {
-                    if (isset($attachment['path']) && file_exists($attachment['path'])) {
-                        $mail->addAttachment($attachment['path'], $attachment['name'] ?? '');
-                    } elseif (isset($attachment['content'])) {
-                        // Support for base64 encoded content
-                        $content = base64_decode($attachment['content']);
-                        $mail->addStringAttachment($content, $attachment['name'] ?? 'attachment', 'base64');
+            foreach ($attachments as $attachment) {
+                if (isset($attachment['content'])) {
+                    $mail->addStringAttachment(
+                        base64_decode($attachment['content']), 
+                        $attachment['name'],
+                        'base64',
+                        '',
+                        isset($attachment['cid']) ? 'inline' : 'attachment'
+                    );
+                    if (isset($attachment['cid'])) {
+                        $mail->addCustomHeader("Content-ID", "<{$attachment['cid']}>");
                     }
                 }
             }
@@ -73,8 +87,12 @@ class MailService
 
             $mail->send();
             return ['success' => true, 'message' => 'Email sent successfully'];
-        } catch (Exception $e) {
-            return ['success' => false, 'message' => "Email could not be sent. Mailer Error: {$mail->ErrorInfo}"];
+        } catch (\Throwable $e) {
+            error_log("PHPMailer Error: " . $e->getMessage());
+            return [
+                'success' => false, 
+                'message' => "Email could not be sent. Error: {$e->getMessage()}"
+            ];
         }
     }
 }

@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   mail-service:
-    image: sinteligentesw/email-php:V1.0.5
+    image: sinteligentesw/email-php:V1.1.0
     ports:
       - "3110:80"
     env_file:
