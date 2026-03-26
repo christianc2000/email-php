@@ -42,13 +42,23 @@ class MailService
 
             // Recipients
             $mail->setFrom($from_email, $from_name);
-            $mail->addAddress($to);
+            if (is_array($to)) {
+                foreach ($to as $recipient) {
+                    $mail->addAddress($recipient);
+                }
+            } else {
+                $mail->addAddress($to);
+            }
 
             // Attachments
             if (!empty($attachments)) {
                 foreach ($attachments as $attachment) {
                     if (isset($attachment['path']) && file_exists($attachment['path'])) {
                         $mail->addAttachment($attachment['path'], $attachment['name'] ?? '');
+                    } elseif (isset($attachment['content'])) {
+                        // Support for base64 encoded content
+                        $content = base64_decode($attachment['content']);
+                        $mail->addStringAttachment($content, $attachment['name'] ?? 'attachment', 'base64');
                     }
                 }
             }

@@ -10,8 +10,13 @@ class MailValidator
 
         if (empty($data['to'])) {
             $errors[] = "Recipient email 'to' is required.";
-        } elseif (!filter_var($data['to'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Recipient email 'to' is not a valid email address.";
+        } else {
+            $toRecipients = is_array($data['to']) ? $data['to'] : [$data['to']];
+            foreach ($toRecipients as $email) {
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $errors[] = "Recipient email '$email' is not a valid email address.";
+                }
+            }
         }
 
         if (empty($data['subject'])) {
