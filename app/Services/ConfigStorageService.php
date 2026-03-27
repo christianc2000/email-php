@@ -13,6 +13,11 @@ class ConfigStorageService
 
     public function saveConfig($name, array $config)
     {
+        // Define directory if it doesn't exist
+        if (!is_dir($this->storagePath)) {
+            mkdir($this->storagePath, 0775, true);
+        }
+
         // Define filename based on config name
         $safeName = preg_replace('/[^a-z0-9_\-]/i', '_', $name);
         $filePath = $this->storagePath . $safeName . '.json';
