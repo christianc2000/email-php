@@ -39,7 +39,12 @@ class MailService
             $mail->CharSet    = 'UTF-8';
             $mail->Encoding   = 'base64';
             $mail->Timeout    = 10; 
-
+            
+            // Habilitar depuración SMTP para ver la respuesta real de Zoho en /var/log/apache2/error.log
+            $mail->SMTPDebug  = 2; 
+            $mail->Debugoutput = function($str, $level) {
+                error_log("SMTP DEBUG: $str");
+            };
             // Forzar IPv4 para evitar timeouts en Render/Linux
             $mail->SMTPOptions = [
                 'ssl' => [
