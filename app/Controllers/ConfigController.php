@@ -57,7 +57,7 @@ class ConfigController
                 echo json_encode(['error' => "Configuration field '{$key}' is required."]);
                 return;
             }
-            $configData[$key] = $data[$key];
+            $configData[$envVar] = $data[$key];
         }
 
         // Save
@@ -69,6 +69,38 @@ class ConfigController
         } else {
             http_response_code(500);
             echo json_encode($response);
+        }
+    }
+    public function check()
+    {
+        $name = $_GET['name'] ?? null;
+
+        if (empty($name)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Project name/hash is required. Use ?name=...']);
+            return;
+        }
+
+        $config = $this->storageService->getConfig($name);
+
+        if ($config) {
+            // Ocultar contraseña por seguridad
+            if (isset($config['SMTP_PASS'])) {
+                $config['SMTP_PASS'] = '********';
+            }
+            
+            echo json_encode([
+                'status' => 'configured',
+                'name' => $name,
+                'file' => "{$name}.json",
+                'data' => $config
+            ]);
+        } else {
+            http_response_code(404);
+            echo json_encode([
+                'status' => 'not_found',
+                'message' => "Configuration '{$name}' not found."
+            ]);
         }
     }
 }

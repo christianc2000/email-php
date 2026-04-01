@@ -26,6 +26,7 @@ class MailService
             $user = $customConfig['SMTP_USER'] ?? $this->config->get('smtp_user');
             $pass = $customConfig['SMTP_PASS'] ?? $this->config->get('smtp_pass');
             $secure = $customConfig['SMTP_SECURE'] ?? $this->config->get('smtp_secure');
+            $fromEmail = $customConfig['SMTP_FROM_EMAIL'] ?? $this->config->get('smtp_from_email');
             $fromName = $customConfig['SMTP_FROM_NAME'] ?? $this->config->get('smtp_from_name');
 
             $mail->isSMTP();
@@ -51,8 +52,8 @@ class MailService
                 ]
             ];
 
-            // IMPORTANTE PARA ZOHO: El From debe ser el usuario autenticado
-            $mail->setFrom($user, $fromName);
+            // Configuración del remitente
+            $mail->setFrom($fromEmail, $fromName);
             
             if (is_array($to)) {
                 foreach ($to as $address) {

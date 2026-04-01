@@ -19,7 +19,11 @@ if (strpos($uri, '/health') !== false) {
     echo json_encode(['status' => 'ok', 'service' => 'email-php', 'time' => date('Y-m-d H:i:s')]);
 } elseif (strpos($uri, '/config') !== false) {
     $controller = new ConfigController();
-    $controller->save();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $controller->save();
+    } else {
+        $controller->check();
+    }
 } else {
     $controller = new SendMailController();
     $controller->handleRequest();

@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   mail-service:
-    image: sinteligentesw/email-php:V1.0.11
+    image: sinteligentesw/email-php:V1.0.12
     volumes:
       - .:/var/www/html
     ports:
