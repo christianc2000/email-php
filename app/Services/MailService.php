@@ -40,20 +40,19 @@ class MailService
             $mail->Encoding   = 'base64';
             $mail->Timeout    = 10; 
             
-            // Habilitar depuración SMTP para ver la respuesta real de Zoho en /var/log/apache2/error.log
-            $mail->SMTPDebug  = 2; 
+            // Habilitar depuración SMTP para ver la respuesta real de Zoho
+            $mail->SMTPDebug  = 3; // Nivel 3 para ver detalles de conexión
             $mail->Debugoutput = function($str, $level) {
-                error_log("SMTP DEBUG: $str");
+                $logFile = __DIR__ . '/../../storage/smtp_debug_log.txt';
+                file_put_contents($logFile, date('[Y-m-d H:i:s] ') . $str . PHP_EOL, FILE_APPEND);
             };
-            // Forzar IPv4 para evitar timeouts en Render/Linux
+
+            // Forzar TLS para evitar problemas de certificados
             $mail->SMTPOptions = [
                 'ssl' => [
                     'verify_peer' => false,
                     'verify_peer_name' => false,
                     'allow_self_signed' => true
-                ],
-                'socket' => [
-                    'bindto' => '0:0'
                 ]
             ];
 
