@@ -43,7 +43,8 @@ class MailService
             // Habilitar depuración SMTP para ver la respuesta real de Zoho
             $mail->SMTPDebug  = 3; // Nivel 3 para ver detalles de conexión
             $mail->Debugoutput = function($str, $level) {
-                $logFile = __DIR__ . '/../../storage/smtp_debug_log.txt';
+                // Forzamos la ruta a la carpeta configs donde sabemos que hay permisos
+                $logFile = __DIR__ . '/../../storage/configs/smtp_debug_log.txt';
                 file_put_contents($logFile, date('[Y-m-d H:i:s] ') . $str . PHP_EOL, FILE_APPEND);
             };
 
