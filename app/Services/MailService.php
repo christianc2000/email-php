@@ -47,6 +47,13 @@ class MailService
             $mail->Encoding   = 'base64';
             $mail->Timeout    = 15; 
             
+            // Forzar un Hostname válido usando el dominio del remitente.
+            // Esto evita que el Message-ID o EHLO salgan como "@192.168.0.16" y sean bloqueados por Spam en Outlook.
+            $domain = substr(strrchr($fromEmail, "@"), 1);
+            if (!empty($domain)) {
+                $mail->Hostname = $domain;
+            }
+            
             // Habilitar depuración SMTP
             $mail->SMTPDebug  = 3; 
             $mail->Debugoutput = function($str, $level) use ($logFile) {
