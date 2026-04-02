@@ -18,7 +18,7 @@ class MailService
     public function sendEmail($to, $subject, $htmlBody, $plainBody = '', $attachments = [], $customConfig = null)
     {
         $logFile = __DIR__ . '/../../storage/configs/smtp_debug_log.txt';
-        file_put_contents($logFile, "\n\n" . date('[Y-m-d H:i:s] ') . "=== NUEVA PETICIÓN DE ENVÍO ===\n", FILE_APPEND);
+        @file_put_contents($logFile, "\n\n" . date('[Y-m-d H:i:s] ') . "=== NUEVA PETICIÓN DE ENVÍO ===\n", FILE_APPEND);
 
         $mail = new PHPMailer(true);
 
@@ -33,8 +33,8 @@ class MailService
             $fromName = $customConfig['SMTP_FROM_NAME'] ?? $this->config->get('smtp_from_name');
 
             // Log de configuración (OJO: No logueamos el pass por seguridad total, solo los primeros 2 caracteres)
-            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "Config: Host=$host, Port=$port, User=$user, Secure=$secure, From=$fromEmail\n", FILE_APPEND);
-            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "Para: " . (is_array($to) ? implode(',', $to) : $to) . "\n", FILE_APPEND);
+            @file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "Config: Host=$host, Port=$port, User=$user, Secure=$secure, From=$fromEmail\n", FILE_APPEND);
+            @file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "Para: " . (is_array($to) ? implode(',', $to) : $to) . "\n", FILE_APPEND);
 
             $mail->isSMTP();
             $mail->Host       = $host;
@@ -54,10 +54,12 @@ class MailService
                 $mail->Hostname = $domain;
             }
             
-            // Habilitar depuración SMTP
+            // Habilitar depuración SMTP y guardarlo en memoria
+            $smtpLogArray = [];
             $mail->SMTPDebug  = 3; 
-            $mail->Debugoutput = function($str, $level) use ($logFile) {
-                file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "[SMTP] " . trim($str) . "\n", FILE_APPEND);
+            $mail->Debugoutput = function($str, $level) use ($logFile, &$smtpLogArray) {
+                @file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "[SMTP] " . trim($str) . "\n", FILE_APPEND);
+                $smtpLogArray[] = trim($str);
             };
 
             // Forzar TLS para evitar problemas de certificados
@@ -101,22 +103,28 @@ class MailService
             $mail->Body    = $htmlBody;
             $mail->AltBody = $plainBody ?: strip_tags($htmlBody);
 
-            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "Intentando enviar con \$mail->send()...\n", FILE_APPEND);
+            @file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "Intentando enviar con \$mail->send()...\n", FILE_APPEND);
             $mail->send();
-            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "✅ ENVÍO EXITOSO SEGÚN PHPMAILER\n", FILE_APPEND);
+            @file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "✅ ENVÍO EXITOSO SEGÚN PHPMAILER\n", FILE_APPEND);
             
-            return ['success' => true, 'message' => 'Email sent successfully'];
+            return [
+                'success' => true, 
+                'message' => 'Email sent successfully',
+                'smtp_log' => implode("\n", $smtpLogArray)
+            ];
         } catch (\Exception $e) {
-            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "❌ ERROR PHPMailer: " . $e->getMessage() . "\n", FILE_APPEND);
+            @file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "❌ ERROR PHPMailer: " . $e->getMessage() . "\n", FILE_APPEND);
             return [
                 'success' => false, 
-                'message' => "Email could not be sent. Error: {$e->getMessage()}"
+                'message' => "Email could not be sent. Error: {$e->getMessage()}",
+                'smtp_log' => isset($smtpLogArray) ? implode("\n", $smtpLogArray) : ''
             ];
         } catch (\Throwable $e) {
-            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "❌ ERROR FATAL: " . $e->getMessage() . "\n", FILE_APPEND);
+            @file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "❌ ERROR FATAL: " . $e->getMessage() . "\n", FILE_APPEND);
             return [
                 'success' => false, 
-                'message' => "Fatal Error: {$e->getMessage()}"
+                'message' => "Fatal Error: {$e->getMessage()}",
+                'smtp_log' => isset($smtpLogArray) ? implode("\n", $smtpLogArray) : ''
             ];
         }
     }
