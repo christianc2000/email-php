@@ -16,7 +16,12 @@ header('Content-Type: application/json');
 $uri = $_SERVER['REQUEST_URI'];
 
 if (strpos($uri, '/health') !== false) {
-    echo json_encode(['status' => 'ok', 'service' => 'email-php', 'time' => date('Y-m-d H:i:s')]);
+    echo json_encode([
+        'status' => 'ok', 
+        'service' => 'email-php', 
+        'version' => '1.1 - SMTP_LOGS_ENABLED',
+        'time' => date('Y-m-d H:i:s')
+    ]);
 } elseif (strpos($uri, '/config') !== false) {
     $controller = new ConfigController();
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
