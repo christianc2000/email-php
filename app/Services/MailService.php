@@ -54,11 +54,12 @@ class MailService
                 $mail->Hostname = $domain;
             }
             
-            // Habilitar depuración SMTP y guardarlo en memoria
+            // Habilitar depuración SMTP y mandarlo al log nativo de Apache
             $smtpLogArray = [];
             $mail->SMTPDebug  = 3; 
-            $mail->Debugoutput = function($str, $level) use ($logFile, &$smtpLogArray) {
-                @file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "[SMTP] " . trim($str) . "\n", FILE_APPEND);
+            $mail->Debugoutput = function($str, $level) use (&$smtpLogArray) {
+                // Esto escribe el chisme entero de Outlook directo en el log de Apache:
+                error_log(trim($str));
                 $smtpLogArray[] = trim($str);
             };
 
