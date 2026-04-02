@@ -17,6 +17,9 @@ class MailService
 
     public function sendEmail($to, $subject, $htmlBody, $plainBody = '', $attachments = [], $customConfig = null)
     {
+        $logFile = __DIR__ . '/../../storage/configs/smtp_debug_log.txt';
+        file_put_contents($logFile, "\n\n" . date('[Y-m-d H:i:s] ') . "=== NUEVA PETICIÓN DE ENVÍO ===\n", FILE_APPEND);
+
         $mail = new PHPMailer(true);
 
         try {
@@ -29,6 +32,10 @@ class MailService
             $fromEmail = $customConfig['SMTP_FROM_EMAIL'] ?? $this->config->get('smtp_from_email');
             $fromName = $customConfig['SMTP_FROM_NAME'] ?? $this->config->get('smtp_from_name');
 
+            // Log de configuración (OJO: No logueamos el pass por seguridad total, solo los primeros 2 caracteres)
+            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "Config: Host=$host, Port=$port, User=$user, Secure=$secure, From=$fromEmail\n", FILE_APPEND);
+            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "Para: " . (is_array($to) ? implode(',', $to) : $to) . "\n", FILE_APPEND);
+
             $mail->isSMTP();
             $mail->Host       = $host;
             $mail->SMTPAuth   = true;
@@ -38,14 +45,12 @@ class MailService
             $mail->Port       = $port;
             $mail->CharSet    = 'UTF-8';
             $mail->Encoding   = 'base64';
-            $mail->Timeout    = 10; 
+            $mail->Timeout    = 15; 
             
-            // Habilitar depuración SMTP para ver la respuesta real de Zoho
-            $mail->SMTPDebug  = 3; // Nivel 3 para ver detalles de conexión
-            $mail->Debugoutput = function($str, $level) {
-                // Forzamos la ruta a la carpeta configs donde sabemos que hay permisos
-                $logFile = __DIR__ . '/../../storage/configs/smtp_debug_log.txt';
-                file_put_contents($logFile, date('[Y-m-d H:i:s] ') . $str . PHP_EOL, FILE_APPEND);
+            // Habilitar depuración SMTP
+            $mail->SMTPDebug  = 3; 
+            $mail->Debugoutput = function($str, $level) use ($logFile) {
+                file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "[SMTP] " . trim($str) . "\n", FILE_APPEND);
             };
 
             // Forzar TLS para evitar problemas de certificados
@@ -89,13 +94,22 @@ class MailService
             $mail->Body    = $htmlBody;
             $mail->AltBody = $plainBody ?: strip_tags($htmlBody);
 
+            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "Intentando enviar con \$mail->send()...\n", FILE_APPEND);
             $mail->send();
+            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "✅ ENVÍO EXITOSO SEGÚN PHPMAILER\n", FILE_APPEND);
+            
             return ['success' => true, 'message' => 'Email sent successfully'];
-        } catch (\Throwable $e) {
-            error_log("PHPMailer Error: " . $e->getMessage());
+        } catch (\Exception $e) {
+            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "❌ ERROR PHPMailer: " . $e->getMessage() . "\n", FILE_APPEND);
             return [
                 'success' => false, 
                 'message' => "Email could not be sent. Error: {$e->getMessage()}"
+            ];
+        } catch (\Throwable $e) {
+            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "❌ ERROR FATAL: " . $e->getMessage() . "\n", FILE_APPEND);
+            return [
+                'success' => false, 
+                'message' => "Fatal Error: {$e->getMessage()}"
             ];
         }
     }
